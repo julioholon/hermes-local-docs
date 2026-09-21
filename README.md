@@ -11,10 +11,26 @@ network for docs.
 
 ## Install
 
+Add the repo as a tap, then install the skill — the identifier is **`owner/repo/skill-name`**:
+
 ```bash
 hermes skills tap add julioholon/hermes-local-docs
-hermes skills install hermes-docs-local
+hermes skills install julioholon/hermes-local-docs/hermes-docs-local
 ```
+
+Or install it straight from GitHub with no tap (note the full path, since the skill is not at the
+repo root):
+
+```bash
+hermes skills install julioholon/hermes-local-docs/skills/hermes-docs-local
+```
+
+Both pull `SKILL.md` plus its `scripts/` directory. A bare `hermes skills install hermes-docs-local`
+will **not** resolve — it fails with *"No skill named 'hermes-docs-local' found in any source"*.
+
+Install runs the skills security scanner first. Expect two `MEDIUM supply_chain` advisories against
+the mirror script (`git_clone`, `unpinned_npm_install`) — both are inherent to the job it does, and the
+verdict is `SAFE`/`ALLOWED`.
 
 ## Build the mirror it reads
 
