@@ -79,6 +79,13 @@ Prefer `search_files` first to locate the page, then `read_file` for the full co
 - `.../docs/user-guide/messaging/` → `user-guide/messaging/`
 - `.../docs/user-guide/profiles` → `user-guide/profiles.md`
 
+## Hard rule, enforced
+
+Relying on this skill being in context is not enough: the agent can follow a `hermes-agent.nousresearch.com`
+link from the bundled `hermes-agent` skill without ever loading this one. The companion hook
+(`scripts/install-airgap-guard.sh`) blocks such tool calls and returns the mirror path as the error
+message. If a fetch to that host was blocked, that is the expected behaviour — never retry the call.
+
 ## Building / refreshing the mirror
 
 The script ships with this skill (`scripts/hermes-docs-mirror.sh`). Resolve it relative to the

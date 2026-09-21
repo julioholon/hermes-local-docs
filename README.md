@@ -75,6 +75,24 @@ it under `/docs/`** — `location /docs/ { alias <website>/build/; }`. The sourc
 prefix (`baseUrl: '/docs/'`, `routeBasePath: '/'`, ~880 absolute `/docs/…` links), so serving the
 build at a host root would need those links rewritten. Just mount it at `/docs/` instead.
 
+### The 403 can still happen without the guard
+
+Installing this skill helps only when it's *in context*. The bundled `hermes-agent` skill carries 16+
+direct `hermes-agent.nousresearch.com` links; an agent that loaded `hermes-agent` but not
+`hermes-docs-local` will still follow them and eat the firewall 403. The fix is a **pre_tool_call
+shell hook** that blocks the call at tool level and returns the mirror path as the error message —
+so the agent self-corrects no matter which skill it loaded:
+
+```bash
+"$HERMES_HOME/skills/hermes-docs-local/scripts/install-airgap-guard.sh"
+```
+
+It installs `airgap-guard.sh` into `$HERMES_HOME/agent-hooks/` and registers it in `config.yaml`
+(never edits an existing `hooks:` block — prints merge lines instead). Set `HERMES_DOCS_MIRROR` to
+override the mirror path, `HERMES_AIRGAP_GUARD=0` to disable for a session. Note the consent model:
+Hermes prompts once per (event, command) pair — for headless/gateway use set
+`hooks_auto_accept: true`.
+
 ## Layout
 
 ```
