@@ -43,6 +43,45 @@ else
     echo "==> registered in $CFG (hooks: block appended)"
 fi
 
+# --- also teach the bundled hermes-agent skill itself (the source of the links) --------------
+# The hook is the enforcement layer; this is the prevention layer: a preamble inside the skill
+# makes the agent prefer the mirror BEFORE it tries the network. Bundled-skill edits are tracked
+# as user modifications (kept by `hermes skills update`; `hermes skills reset` undoes this).
+AGENT_SKILL="$(find "$HERMES_HOME/skills" -maxdepth 4 -path '*hermes-agent/SKILL.md' 2>/dev/null | head -1)"
+if [[ -z "$AGENT_SKILL" ]]; then
+    echo "!! bundled hermes-agent skill not found under $HERMES_HOME/skills — preamble not applied"
+elif grep -q 'HERMES-AIRGAP-PREAMBLE' "$AGENT_SKILL"; then
+    echo "==> bundled hermes-agent skill already patched: $AGENT_SKILL"
+else
+    MIRROR_LINE="${HERMES_DOCS_MIRROR:-/opt/data/docs/hermes}"
+    python3 - "$AGENT_SKILL" "$MIRROR_LINE" <<'PY'
+import sys
+path, mirror = sys.argv[1], sys.argv[2]
+text = open(path).read()
+if "HERMES-AIRGAP-PREAMBLE" in text:
+    sys.exit(0)
+pre = (
+    "<!-- HERMES-AIRGAP-PREAMBLE: added by hermes-local-docs install-airgap-guard.sh -->\n"
+    "**Air-gapped environment:** if the local docs mirror exists (`$HERMES_DOCS_MIRROR`, default "
+    f"`{mirror}`), **NEVER fetch hermes-agent.nousresearch.com** — the corporate firewall 403s it. "
+    "Resolve every docs link in this file against the local mirror instead (see the hermes-docs-local "
+    "skill for the URL-to-local-path map). Fetching it wastes a turn and returns an HTML error page.\n\n"
+)
+lines = text.splitlines(keepends=True)
+if lines and lines[0].strip() == "---":
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            lines.insert(i + 1, "\n" + pre)
+            break
+    else:
+        lines.insert(0, pre)
+else:
+    lines.insert(0, pre)
+open(path, "w").write("".join(lines))
+print("==> patched bundled hermes-agent skill:", path)
+PY
+fi
+
 echo
 echo "Consent: Hermes prompts once per (event, command) pair on first use. For headless/gateway"
 echo "use, set 'hooks_auto_accept: true' in $CFG, or accept the prompt once in a TUI session."
