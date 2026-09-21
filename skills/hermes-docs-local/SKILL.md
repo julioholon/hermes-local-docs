@@ -101,15 +101,18 @@ Options:
 |---|---|
 | `--src PATH` | Use an existing `hermes-agent` checkout instead of cloning. No network access at all. Validated to contain `website/docs/`. |
 | `--pull` | With `--src`: `git pull --ff-only` first so the mirror is fresh; a failure only warns. |
-| `--build-site` | Also build the rendered Docusaurus site → `${DEST}-site` (runs `npm install/build` inside `<src>/website`). |
-| `--locale L` | Locale for `--build-site`. Default `en` (upstream ships en/zh-Hans/ko; each is a separate build). `--locale all` = upstream behaviour. |
-| `--base-url P` | URL prefix for `--build-site`. Default: upstream `/docs/`. Use `--base-url /` to serve at a host root — it also rewrites the docs' own absolute `/docs/` links (883 of them; the source is authored for that prefix). |
 | `-h`, `--help` | Usage. |
 
 Env: `DEST` (mirror root, default `/opt/data/docs/hermes`), `HERMES_SRC` (default of `--src`).
 
 ## If a rendered site is served internally
 
-Some deployments also serve the built site on an internal hostname. Links *may* be followed **only**
-against that internal host — never against `hermes-agent.nousresearch.com`. When in doubt, prefer the
-markdown mirror.
+Some deployments also serve the site on an internal hostname. Links *may* be followed **only** against
+that internal host — never against `hermes-agent.nousresearch.com`. When in doubt, prefer the markdown
+mirror.
+
+To browse the docs as a website on a machine that has a checkout, the dev server needs no build:
+
+```bash
+cd <clone>/website && npm install && npm run start   # http://localhost:3000/docs/
+```
