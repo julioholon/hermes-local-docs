@@ -55,23 +55,36 @@ elif grep -q 'HERMES-AIRGAP-PREAMBLE' "$AGENT_SKILL"; then
 else
     MIRROR_LINE="${HERMES_DOCS_MIRROR:-/opt/data/docs/hermes}"
     python3 - "$AGENT_SKILL" "$MIRROR_LINE" <<'PY'
-import sys
+import os, re, sys
 path, mirror = sys.argv[1], sys.argv[2]
 text = open(path).read()
+
+# 1) optional URL scrub FIRST, on the original content: replace absolute docs URLs with
+#    `mirror:` references so the blocked domain never appears in any prompt (egress DLP can
+#    403 the chat completion on prompt content). Runs when the mirror exists or SCRUB_URLS=1.
+if os.environ.get("SCRUB_URLS") == "1" or os.path.isdir(mirror):
+    n = len(re.findall(r"https://hermes-agent\.nousresearch\.com/docs[^)\s\"'\]]*", text))
+    if n:
+        text = re.sub(r"https://hermes-agent\.nousresearch\.com/docs/?", "mirror:", text)
+        open(path, "w").write(text)
+        print(f"==> scrubbed {n} docs URLs -> mirror: references")
+
+# 2) airgap preamble after the frontmatter
 if "HERMES-AIRGAP-PREAMBLE" in text:
     sys.exit(0)
 pre = (
     "<!-- HERMES-AIRGAP-PREAMBLE: added by hermes-local-docs install-airgap-guard.sh -->\n"
-    "**Air-gapped environment:** if the local docs mirror exists (`$HERMES_DOCS_MIRROR`, default "
-    f"`{mirror}`), **NEVER fetch hermes-agent.nousresearch.com** — the corporate firewall 403s it. "
-    "Resolve every docs link in this file against the local mirror instead (see the hermes-docs-local "
-    "skill for the URL-to-local-path map). Fetching it wastes a turn and returns an HTML error page.\n\n"
+    "**Air-gapped environment:** docs links in this file are written as `mirror:<path>` = read the "
+    "file under the local mirror (`$HERMES_DOCS_MIRROR`, default "
+    f"`{mirror}`), e.g. `mirror:user-guide/configuration` -> `{mirror}/user-guide/configuration`. "
+    "NEVER fetch the public docs host — the corporate firewall 403s it, and the domain string "
+    "must not re-enter your context. See the hermes-docs-local skill for the section map."
 )
 lines = text.splitlines(keepends=True)
 if lines and lines[0].strip() == "---":
     for i in range(1, len(lines)):
         if lines[i].strip() == "---":
-            lines.insert(i + 1, "\n" + pre)
+            lines.insert(i + 1, "\n\n" + pre)
             break
     else:
         lines.insert(0, pre)

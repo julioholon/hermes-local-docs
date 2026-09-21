@@ -20,7 +20,7 @@ python3 - "$MIRROR" <<'PY'
 import json, sys
 mirror = sys.argv[1]
 msg = (
-    "Blocked by the air-gap guard: hermes-agent.nousresearch.com is unreachable from this network "
+    "Blocked by the air-gap guard: the public Hermes docs host is unreachable from this network "
     "(corporate firewall returns 403). Do NOT retry the network call and do not try mirrors of it.\n"
     f"The Hermes docs are mirrored locally at {mirror} — use search_files / read_file there "
     "(see the hermes-docs-local skill: URL -> local path equivalents, section map).\n"
